@@ -1,0 +1,41 @@
+name: CI
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+  schedule:
+    - cron:  '0 0 * * *'
+
+jobs:
+
+  thehivebackup:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+        python-version: [3.6, 3.7, 3.8, 3.9]
+
+    steps:
+
+      # Setup
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install .
+
+      # Lint
+      - run: pip install pylint
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.9' # just lint in one workflow
+      - run: pylint thehivebackup --rcfile test/python/.pylintrc
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.9' # just lint in one workflow
+
+      # Run
+      # - name: Run thehivebackup
+      #   run: thehivebackup backup
+
+      # Eval results
+      # - name: Test results
+      #   run: cat results.json | wc -l | grep 666
+      #   shell: bash
