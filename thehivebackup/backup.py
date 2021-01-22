@@ -25,10 +25,8 @@ class Backupper:
         if self.ssl:
             if self.verify:
                 return http.client.HTTPSConnection(self.host, self.port)
-            else:
-                return http.client.HTTPSConnection(self.host, self.port, context=ssl._create_unverified_context())
-        else:
-            return http.client.HTTPConnection(self.host, self.port)
+            return http.client.HTTPSConnection(self.host, self.port, context=ssl._create_unverified_context())
+        return http.client.HTTPConnection(self.host, self.port)
 
     def request(self, method: str, url: str, api_key: str, data: dict = None) -> bytes:
         conn = self._conn()
@@ -47,16 +45,16 @@ class Backupper:
     def get_file(self, file_id: str, api_key: str):
         os.makedirs(os.path.join(self.backupdir, 'attachments'), exist_ok=True)
         response = self.request('GET', f'/api/datastore/{file_id}', api_key)
-        with open(os.path.join(self.backupdir, 'attachments', file_id), 'wb') as f:
-            f.write(response)
+        with open(os.path.join(self.backupdir, 'attachments', file_id), 'wb') as io:
+            io.write(response)
 
     def backup_cases_all(self) -> [dict]:
-        cases = self.request('GET', f'/api/case?range=all', self.api_key)
+        cases = self.request('GET', '/api/case?range=all', self.api_key)
         self._backup_cases(json.loads(cases))
 
     def backup_cases_range(self, start, end) -> [dict]:
         query = {'query': {'_between': {'_field': 'createdAt', '_from': start, '_to': end}}}
-        cases = self.request('POST', f'/api/case/_search?range=all', self.api_key, query)
+        cases = self.request('POST', '/api/case/_search?range=all', self.api_key, query)
         self._backup_cases(json.loads(cases))
 
     def _backup_cases(self, cases):
@@ -78,7 +76,7 @@ class Backupper:
 
     def backup_tasks(self, case_id: str) -> [dict]:
         query = {'query': {'_parent': {'_type': 'case', '_query': {'_id': case_id}}}}
-        tasks = self.request('POST', f'/api/case/task/_search?range=all', self.api_key, query)
+        tasks = self.request('POST', '/api/case/task/_search?range=all', self.api_key, query)
         tasks = json.loads(tasks)
         if tasks:
             case_path = os.path.join(self.backupdir, 'cases', case_id)
@@ -104,7 +102,7 @@ class Backupper:
 
     def backup_observables(self, case_id: str):
         query = {'query': {'_parent': {'_type': 'case', '_query': {'_id': case_id}}}}
-        observables = self.request('POST', f'/api/case/artifact/_search?range=all', self.api_key, query)
+        observables = self.request('POST', '/api/case/artifact/_search?range=all', self.api_key, query)
         observables = json.loads(observables)
         if observables:
             os.makedirs(os.path.join(self.backupdir, 'cases', case_id), exist_ok=True)
@@ -116,13 +114,13 @@ class Backupper:
                         self.get_file(observable['attachment']['id'], self.api_key)
 
     def backup_alerts_all(self):
-        alerts = self.request('GET', f'/api/alert?range=all', self.api_key)
+        alerts = self.request('GET', '/api/alert?range=all', self.api_key)
         alerts = json.loads(alerts)
         self._backup_alerts(alerts)
 
     def backup_alerts_range(self, start, end):
         query = {'query': {'_between': {'_field': 'createdAt', '_from': start, '_to': end}}}
-        alerts = self.request('POST', f'/api/alert/_search?range=all', self.api_key, query)
+        alerts = self.request('POST', '/api/alert/_search?range=all', self.api_key, query)
         alerts = json.loads(alerts)
         self._backup_alerts(alerts)
 

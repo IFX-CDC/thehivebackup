@@ -83,8 +83,8 @@ def load_mapping(mapping_path: str) -> dict:
     return mapping
 
 
-def parse_url(u: str) -> (bool, str, int):
-    url = urllib3.util.parse_url(u)
+def parse_url(url_str: str) -> (bool, str, int):
+    url = urllib3.util.parse_url(url_str)
     ssl = True
     if url.scheme is not None and url.scheme == "http":
         ssl = False
@@ -99,16 +99,16 @@ def parse_url(u: str) -> (bool, str, int):
 
 def clear(args):
     ssl, host, port = parse_url(args.host)
-    d = Deletor(host, args.key, port, ssl, args.verify, args.connections)
-    d.delete_cases()
-    d.delete_alerts()
+    deletor = Deletor(host, args.key, port, ssl, args.verify, args.connections)
+    deletor.delete_cases()
+    deletor.delete_alerts()
 
 
 def restore(args, mapping):
     start_time = time.time()
     ssl, host, port = parse_url(args.host)
     print(f'Start at {datetime.datetime.now().isoformat()}')
-    recoverer = Restorer(args.backup, host, args.key, mapping, args.connections, ssl, args.verify)
+    recoverer = Restorer(args.backup, host, port, args.key, mapping, args.connections, ssl, args.verify)
     recoverer.store_cases()
     recoverer.restore_alerts()
     print(f'Restore done in {time.time() - start_time} seconds')
@@ -142,7 +142,7 @@ def backup(args):
         migration.backup_alerts_range(start, end)
     else:
         print("Either --year and --month need to be given or none of both.")
-        exit(1)
+        sys.exit(1)
     print(f'Backup done in {time.time() - start_time:.2f} seconds')
 
 

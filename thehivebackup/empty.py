@@ -19,10 +19,8 @@ class Deletor:
         if self.ssl:
             if self.verify:
                 return http.client.HTTPSConnection(self.host, self.port)
-            else:
-                return http.client.HTTPSConnection(self.host, self.port, context=ssl._create_unverified_context())
-        else:
-            return http.client.HTTPConnection(self.host, self.port)
+            return http.client.HTTPSConnection(self.host, self.port, context=ssl._create_unverified_context())
+        return http.client.HTTPConnection(self.host, self.port)
 
     def delete_alert(self, alert):
         conn = self._conn()

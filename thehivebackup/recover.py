@@ -12,9 +12,10 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class Restorer:
 
-    def __init__(self, backupdir: str, host: str, api_key: str, mapping: dict, connections: int = 32, ssl=True,
-                 verify=True):
+    def __init__(self, backupdir: str, host: str, port: int, api_key: str, mapping: dict, connections: int = 32,
+                 ssl=True, verify=True):
         self.host = host
+        self.port = port
         self.ssl = ssl
         self.verify = verify
         self.api_key = api_key
@@ -27,18 +28,18 @@ class Restorer:
 
     def request(self, method: str, url: str, api_key: str, data: dict, files: dict = None) -> requests.Response:
         headers = {'Authorization': 'Bearer ' + api_key}
-        u = "http://" + self.host + url
+        url_str = f"http://{self.host}:{self.port}{url}"
         if self.ssl:
-            u = "https://" + self.host + url
+            url_str = f"https://{self.host}:{self.port}{url}"
         if files is None:
-            response = requests.request(method, u, headers=headers, verify=self.verify, json=data)
+            response = requests.request(method, url_str, headers=headers, verify=self.verify, json=data)
         else:
             data = {"_json": json.dumps(data)}
-            response = requests.request(method, u, headers=headers, verify=self.verify, data=data, files=files)
+            response = requests.request(method, url_str, headers=headers, verify=self.verify, data=data, files=files)
         if response.status_code != 200 and response.status_code != 201:
             if "id" in data:
-                logging.warning(f"id: {data['id']}")
-            logging.warning(u)
+                logging.warning("id: %s", data['id'])
+            logging.warning(url_str)
             logging.warning(data)
             logging.warning(response.text)
         return response
@@ -46,8 +47,8 @@ class Restorer:
     def restore_file(self, url: str, api_key: str, case_object: dict) -> requests.Response:
         filename = case_object['attachment']['name']
         file_id = case_object['attachment']['id']
-        with open(os.path.join(self.backupdir, 'attachments', file_id), 'rb') as f:
-            file_data = f.read()
+        with open(os.path.join(self.backupdir, 'attachments', file_id), 'rb') as io:
+            file_data = io.read()
         del case_object['attachment']
         return self.request('POST', url, api_key, case_object, {'attachment': (filename, file_data)})
 
@@ -76,7 +77,7 @@ class Restorer:
         case = json.loads(line)
         old_case_id = case['id']
         api_key = self.get_api_key(case)
-        response = self.request('POST', f'/api/case', api_key, case)
+        response = self.request('POST', '/api/case', api_key, case)
         if response.status_code == 200 or response.status_code == 201:
             # new_case_id = json.loads(response.read())['id']
             new_case_id = response.json()['id']
@@ -145,4 +146,4 @@ class Restorer:
             pool.map(self.restore_alert_line, io)
 
     def restore_alert_line(self, line):
-        self.request('POST', f'/api/alert/', self.api_key, json.loads(line))
+        self.request('POST', '/api/alert/', self.api_key, json.loads(line))
