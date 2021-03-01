@@ -9,12 +9,15 @@ from multiprocessing import Pool
 
 class Backupper:
 
-    def __init__(self, backupdir: str, host: str, api_key: str, port=80, use_ssl=True, verify=True):
+    def __init__(self, backupdir: str, host: str, api_key: str,
+                 org: str = "", port: int = 80, use_ssl: bool = True, verify: bool = True):
         self.host = host
         self.port = port
         self.ssl = use_ssl
         self.verify = verify
         self.api_key = api_key
+
+        self.org = org
 
         self.backupdir = f'{backupdir}-{int(datetime.datetime.utcnow().timestamp())}'
         os.makedirs(self.backupdir, exist_ok=True)
@@ -31,6 +34,8 @@ class Backupper:
     def request(self, method: str, url: str, api_key: str, data: dict = None) -> bytes:
         conn = self._conn()
         headers = {'Authorization': 'Bearer ' + api_key}
+        if self.org != "":
+            headers['X-Organisation'] = self.org
         if data is not None:
             headers['Content-type'] = 'application/json'
             data = json.dumps(data)
