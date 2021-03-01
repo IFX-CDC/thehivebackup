@@ -23,6 +23,7 @@ def main():
 
     parser_backup = subparsers.add_parser('backup', description='Backup TheHive')
     parser_backup.add_argument('--key', type=str, required=True, help='TheHive api key')
+    parser_backup.add_argument('--org', type=str, required=False, help='Organisation')
     parser_backup.add_argument('--year', type=int, help='Pass --year and --month to backup a single month')
     parser_backup.add_argument('--month', type=int, help='Pass --year and --month to backup a single month')
     parser_backup.add_argument('--day', type=int, help='Pass --year and --month to backup a single month')
@@ -36,6 +37,7 @@ def main():
 
     parser_restore = subparsers.add_parser('restore', description='Restore TheHive')
     parser_restore.add_argument('--key', type=str, required=True, help='TheHive api key')
+    parser_restore.add_argument('--org', type=str, required=False, help='Organisation')
     parser_restore.add_argument('--connections', type=int, help='maximum connections')
     parser_restore.add_argument('--mapping', type=str, help='User mapping csv file')
     parser_restore.add_argument("--no-verify", help="Set to false to disable ssl verification", dest='verify',
@@ -45,6 +47,7 @@ def main():
 
     parser_clear = subparsers.add_parser('clear', description='Clean TheHive')
     parser_clear.add_argument('--key', type=str, required=True, help='TheHive api key')
+    parser_clear.add_argument('--org', type=str, required=False, help='Organisation')
     parser_clear.add_argument('--connections', type=int, help='maximum connections')
     parser_clear.add_argument("--no-verify", help="Set to false to disable ssl verification", dest='verify',
                               action="store_false", default=True)
@@ -122,22 +125,22 @@ def backup(args):
     start_time = time.time()
     ssl, host, port = parse_url(args.host)
     if args.year is None and args.month is None:
-        migration = Backupper("backup-full", host, args.key, port, ssl, args.verify)
+        migration = Backupper(f"backup-{args.org}-full", host, args.key, args.org, port, ssl, args.verify)
         migration.backup_cases_all()
         migration.backup_alerts_all()
     elif args.year is not None and args.month is not None:
         if args.day is None:
-            name = f"backup-{args.year}-{args.month}"
+            name = f"backup-{args.org}-{args.year}-{args.month}"
             start = utc_nano_timestamp(args.year, args.month, 1)
             next_month = args.month + 1
             if next_month == 13:
                 next_month = 1
             end = utc_nano_timestamp(args.year, next_month, 1) - 1
         else:
-            name = f"backup-{args.year}-{args.month}-{args.day}"
+            name = f"backup-{args.org}-{args.year}-{args.month}-{args.day}"
             start = utc_nano_timestamp(args.year, args.month, args.day)
             end = start + 60 * 60 * 24 * 1000 - 1
-        migration = Backupper(name, host, args.key, port, ssl, args.verify)
+        migration = Backupper(name, host, args.org, args.key, port, ssl, args.verify)
         migration.backup_cases_range(start, end)
         migration.backup_alerts_range(start, end)
     else:

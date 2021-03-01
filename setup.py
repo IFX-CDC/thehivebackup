@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='thehivebackup',
-    version='0.1.0',
+    version='0.1.1',
     url='https://github.com/IFX-CDC/thehivebackup',
     author='Anton Piiroja & Jonas Plum',
     description='Backup and restore TheHive remotely',
