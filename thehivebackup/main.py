@@ -7,6 +7,8 @@ import time
 
 import urllib3
 
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 from thehivebackup.backup import Backupper
 from thehivebackup.empty import Deletor
 from thehivebackup.migrate3to4 import migrate
@@ -123,9 +125,8 @@ def utc_nano_timestamp(year: int, month: int, day: int) -> int:
 
 def backup(args):
     start_time = time.time()
-    ssl, host, port = parse_url(args.host)
     if args.year is None and args.month is None:
-        migration = Backupper(f"backup-{args.org}-full", host, args.key, args.org, port, ssl, args.verify)
+        migration = Backupper(f"backup-{args.org}-full", args.host, args.key, args.org, args.verify)
         migration.backup_cases_all()
         migration.backup_alerts_all()
     elif args.year is not None and args.month is not None:
@@ -140,7 +141,7 @@ def backup(args):
             name = f"backup-{args.org}-{args.year}-{args.month}-{args.day}"
             start = utc_nano_timestamp(args.year, args.month, args.day)
             end = start + 60 * 60 * 24 * 1000 - 1
-        migration = Backupper(name, host, args.org, args.key, port, ssl, args.verify)
+        migration = Backupper(name, args.host, args.org, args.key, args.verify)
         migration.backup_cases_range(start, end)
         migration.backup_alerts_range(start, end)
     else:
