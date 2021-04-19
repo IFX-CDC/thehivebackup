@@ -1,14 +1,11 @@
 import datetime
-import http.client
 import json
-import logging
 import os
-import ssl
-
-from thehive4py.api import TheHiveApi
-from thehive4py.query import Eq, Not, Between, Or
 
 from multiprocessing import Pool
+
+from thehive4py.api import TheHiveApi
+from thehive4py.query import Between
 
 
 class Backupper:

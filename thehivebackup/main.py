@@ -7,14 +7,14 @@ import time
 
 import urllib3
 
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
 from thehivebackup.backup import Backupper
 from thehivebackup.empty import Deletor
 from thehivebackup.migrate3to4 import migrate
 from thehivebackup.recover import Restorer
 
 logger = logging.getLogger(__name__)
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 def main():
