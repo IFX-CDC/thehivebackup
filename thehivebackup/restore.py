@@ -7,7 +7,7 @@ from multiprocessing import Pool
 import requests
 from urllib3.exceptions import InsecureRequestWarning
 
-requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
+requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)  # pylint: disable=no-member
 
 
 class Restorer:
@@ -90,13 +90,13 @@ class Restorer:
                     response = self.request('POST', f'/api/case/{new_case_id}/task', self.api_key, task)
 
                     if response.status_code == 200 or response.status_code == 201:
-                        new_task_id = response.json()['id']
+                        task_id = response.json()['id']
 
                         if 'owner' in task and task['owner']:
-                            self.request('PATCH', f'/api/case/task/{new_task_id}', self.api_key, {'owner': task['owner']})
+                            self.request('PATCH', f'/api/case/task/{task_id}', self.api_key, {'owner': task['owner']})
 
                         if os.path.exists(os.path.join(self.backupdir, 'cases', old_case_id, 'tasks', task['id'])):
-                            self.restore_logs(old_case_id, task['id'], new_task_id)
+                            self.restore_logs(old_case_id, task['id'], task_id)
 
     def restore_logs(self, old_case_id: str, old_task_id: str, new_task_id: str):
         logs_path = os.path.join(self.backupdir, 'cases', old_case_id, 'tasks', old_task_id, 'logs.jsonl')

@@ -120,7 +120,7 @@ def backup(args):
     if args.org:
         name += f"-{args.org}"
     if args.year is None and args.month is None:
-        migration = Backupper(name + f"-full", args.host, args.key, args.org, args.verify)
+        migration = Backupper(name + "-full", args.host, args.key, args.org, args.verify)
         migration.backup_cases_all()
         migration.backup_alerts_all()
     elif args.year is not None and args.month is not None:

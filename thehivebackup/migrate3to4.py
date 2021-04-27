@@ -11,14 +11,14 @@ def ensure_custom_fields(case):
 
 
 def add_old_no(case):
-    case["customFields"]['old-case-no'] = case['caseId'],
+    case["customFields"]['old-case-no'] = case['caseId']
     case["customFields"]['old-case-id'] = case['id']
     return case
 
 
 def migrate_fields(case: dict, field_mapping_file: str) -> dict:
-    with open(field_mapping_file, mode='r') as r:
-        reader = csv.reader(r)
+    with open(field_mapping_file, mode='r') as io:
+        reader = csv.reader(io)
         field_mapping = dict(reader)
 
     new_fields = {}
@@ -31,8 +31,8 @@ def migrate_fields(case: dict, field_mapping_file: str) -> dict:
 
 
 def migrate_metrics(case: dict, metrics_mapping_file: str) -> dict:
-    with open(metrics_mapping_file, mode='r') as r:
-        reader = csv.reader(r)
+    with open(metrics_mapping_file, mode='r') as io:
+        reader = csv.reader(io)
         metric_mapping = dict(reader)
 
     new_fields = {}
@@ -51,8 +51,8 @@ def migrate_metrics(case: dict, metrics_mapping_file: str) -> dict:
 def migrate_user(case: dict, user_mapping_file: str, default_user: str) -> dict:
     users = {}
     if user_mapping_file:
-        with open(user_mapping_file, mode='r') as r:
-            reader = csv.reader(r)
+        with open(user_mapping_file, mode='r') as io:
+            reader = csv.reader(io)
             users = dict(reader)
     if 'owner' in case:
         if case['owner'] in users:
