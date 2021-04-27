@@ -52,8 +52,8 @@ class Restorer:
 
     def store_cases(self):
         with open(self.case_file, 'r') as io:
-            pool = Pool(processes=self.connections)
-            pool.map(self.restore_case_line, io)
+            with Pool(processes=self.connections) as pool:
+                pool.map(self.restore_case_line, io)
 
     def restore_case_line(self, line):
         case = json.loads(line)
@@ -117,8 +117,7 @@ class Restorer:
                             self.request('PATCH', f'/api/case/task/log/{log_id}', self.api_key, {'owner': log['owner']})
 
     def restore_alerts(self):
-        with open(self.alert_file, 'r') as io:
-            pool = Pool(processes=self.connections)
+        with open(self.alert_file, 'r') as io, Pool(processes=self.connections) as pool:
             pool.map(self.restore_alert_line, io)
 
     def restore_alert_line(self, line):

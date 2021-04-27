@@ -41,14 +41,14 @@ class Backupper:
 
     def _backup_cases(self, cases: [dict]):
         with open(self.case_file, 'w+', encoding='utf8') as io:
-            pool = Pool(processes=8)
-            for case in cases:
-                json.dump(case, io)
-                io.write('\n')
+            with Pool(processes=8) as pool:
+                for case in cases:
+                    json.dump(case, io)
+                    io.write('\n')
 
-            pool.map(self._backup_case, cases)
-            pool.close()
-            pool.join()
+                pool.map(self._backup_case, cases)
+                pool.close()
+                pool.join()
 
     def _backup_case(self, case: dict):
         self.backup_observables(case['id'])

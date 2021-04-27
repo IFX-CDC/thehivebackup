@@ -35,8 +35,8 @@ class Deletor:
 
         alerts = json.loads(resp)
 
-        pool = Pool(processes=self.connections)
-        pool.map(self.delete_alert, alerts)
+        with Pool(processes=self.connections) as pool:
+            pool.map(self.delete_alert, alerts)
 
     def delete_case(self, case):
         conn = self._conn()
@@ -51,5 +51,5 @@ class Deletor:
 
         cases = json.loads(resp)
 
-        pool = Pool(processes=self.connections)
-        pool.map(self.delete_case, cases)
+        with Pool(processes=self.connections) as pool:
+            pool.map(self.delete_case, cases)
