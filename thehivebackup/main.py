@@ -1,5 +1,4 @@
 import argparse
-import csv
 import datetime
 import logging
 import sys
@@ -10,11 +9,9 @@ import urllib3
 from thehivebackup.backup import Backupper
 from thehivebackup.empty import Deletor
 from thehivebackup.migrate3to4 import migrate
-from thehivebackup.recover import Restorer
+from thehivebackup.restore import Restorer
 
 logger = logging.getLogger(__name__)
-
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 def main():
@@ -34,14 +31,19 @@ def main():
     parser_backup.add_argument('host', type=str, help='host of TheHive api')
 
     parser_migrate = subparsers.add_parser('migrate3to4', description='Migrate TheHive')
-    parser_migrate.add_argument('--mapping', type=str, help='User mapping csv file')
+    parser_migrate.add_argument('--usermapping', type=str, help='User mapping csv file')
+    parser_migrate.add_argument('--fieldmapping', type=str, help='Custom field mapping csv file')
+    parser_migrate.add_argument('--metricmapping', type=str, help='Metric mapping csv file')
+    parser_migrate.add_argument('--add_old_no', action="store_true", default=False,
+                                help='Add old case number as "old-case-no" and "old-case-id"')
+    parser_migrate.add_argument('--default-user', type=str, required=True, help='default user')
     parser_migrate.add_argument('backup', type=str, help='TheHive backup')
 
     parser_restore = subparsers.add_parser('restore', description='Restore TheHive')
     parser_restore.add_argument('--key', type=str, required=True, help='TheHive api key')
     parser_restore.add_argument('--org', type=str, required=False, help='Organisation')
     parser_restore.add_argument('--connections', type=int, help='maximum connections')
-    parser_restore.add_argument('--mapping', type=str, help='User mapping csv file')
+    parser_restore.add_argument('--alerts', action="store_true", default=False, help='restore alerts')
     parser_restore.add_argument("--no-verify", help="Set to false to disable ssl verification", dest='verify',
                                 action="store_false", default=True)
     parser_restore.add_argument('backup', type=str, help='TheHive backup')
@@ -69,23 +71,11 @@ def main():
     if args.subcommand == "backup":
         backup(args)
     elif args.subcommand == "migrate3to4":
-        migrate(args.backup)
+        migrate(args)
     elif args.subcommand == "restore":
-        mapping = dict()
-        if args.mapping:
-            mapping = load_mapping(args.mapping)
-        restore(args, mapping)
+        restore(args)
     elif args.subcommand == "clear":
         clear(args)
-
-
-def load_mapping(mapping_path: str) -> dict:
-    mapping = dict()
-    with open(mapping_path, mode='r') as infile:
-        reader = csv.reader(infile)
-        for row in reader:
-            mapping[row[0]] = {'mail': row[1], 'key': row[2]}
-    return mapping
 
 
 def parse_url(url_str: str) -> (bool, str, int):
@@ -109,13 +99,14 @@ def clear(args):
     deletor.delete_alerts()
 
 
-def restore(args, mapping):
+def restore(args):
     start_time = time.time()
     ssl, host, port = parse_url(args.host)
     print(f'Start at {datetime.datetime.now().isoformat()}')
-    recoverer = Restorer(args.backup, host, port, args.key, mapping, args.connections, ssl, args.verify)
-    recoverer.store_cases()
-    recoverer.restore_alerts()
+    restorer = Restorer(args.backup, host, port, args.key, args.connections, ssl, args.verify)
+    restorer.store_cases()
+    if args.alerts:
+        restorer.restore_alerts()
     print(f'Restore done in {time.time() - start_time} seconds')
 
 
@@ -125,23 +116,26 @@ def utc_nano_timestamp(year: int, month: int, day: int) -> int:
 
 def backup(args):
     start_time = time.time()
+    name = "backup"
+    if args.org:
+        name += f"-{args.org}"
     if args.year is None and args.month is None:
-        migration = Backupper(f"backup-{args.org}-full", args.host, args.key, args.org, args.verify)
+        migration = Backupper(name + f"-full", args.host, args.key, args.org, args.verify)
         migration.backup_cases_all()
         migration.backup_alerts_all()
     elif args.year is not None and args.month is not None:
         if args.day is None:
-            name = f"backup-{args.org}-{args.year}-{args.month}"
+            name += f"-{args.year}-{args.month}"
             start = utc_nano_timestamp(args.year, args.month, 1)
             next_month = args.month + 1
             if next_month == 13:
                 next_month = 1
             end = utc_nano_timestamp(args.year, next_month, 1) - 1
         else:
-            name = f"backup-{args.org}-{args.year}-{args.month}-{args.day}"
+            name += f"-{args.year}-{args.month}-{args.day}"
             start = utc_nano_timestamp(args.year, args.month, args.day)
             end = start + 60 * 60 * 24 * 1000 - 1
-        migration = Backupper(name, args.host, args.org, args.key, args.verify)
+        migration = Backupper(name, args.host, args.key, args.org, args.verify)
         migration.backup_cases_range(start, end)
         migration.backup_alerts_range(start, end)
     else:

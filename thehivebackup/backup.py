@@ -1,11 +1,13 @@
 import datetime
 import json
 import os
-
 from multiprocessing import Pool
 
+import urllib3
 from thehive4py.api import TheHiveApi
 from thehive4py.query import Between
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 class Backupper:
@@ -26,7 +28,7 @@ class Backupper:
         os.makedirs(os.path.join(self.backupdir, 'attachments'), exist_ok=True)
         response = self.api.download_attachment(attachment_id)
         with open(os.path.join(self.backupdir, 'attachments', attachment_id), 'wb') as io:
-            io.write(response)
+            io.write(response.content)
 
     def backup_cases_all(self) -> [dict]:
         cases = self.api.find_cases(query={}, sort=['-createdAt'], range='all').json()
