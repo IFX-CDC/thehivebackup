@@ -119,28 +119,34 @@ def backup(args):
     name = "backup"
     if args.org:
         name += f"-{args.org}"
-    if args.year is None and args.month is None:
+    if args.year is None and args.month is None and args.day is None:
         migration = Backupper(name + "-full", args.host, args.key, args.org, args.verify)
         migration.backup_cases_all()
         migration.backup_alerts_all()
-    elif args.year is not None and args.month is not None:
-        if args.day is None:
+    else:
+        if args.year is not None and args.month is not None and args.day is not None:
+            name += f"-{args.year}-{args.month}-{args.day}"
+            start = utc_nano_timestamp(args.year, args.month, args.day)
+            end = start + 60 * 60 * 24 * 1000 - 1
+        elif args.year is not None and args.month is not None:
             name += f"-{args.year}-{args.month}"
             start = utc_nano_timestamp(args.year, args.month, 1)
             next_month = args.month + 1
             if next_month == 13:
                 next_month = 1
             end = utc_nano_timestamp(args.year, next_month, 1) - 1
+        elif args.year is not None:
+            name += f"-{args.year}"
+            start = utc_nano_timestamp(args.year, 1, 1)
+            end = utc_nano_timestamp(args.year + 1, 1, 1) - 1
         else:
-            name += f"-{args.year}-{args.month}-{args.day}"
-            start = utc_nano_timestamp(args.year, args.month, args.day)
-            end = start + 60 * 60 * 24 * 1000 - 1
+            print("--year needs to be given")
+            sys.exit(1)
+
         migration = Backupper(name, args.host, args.key, args.org, args.verify)
         migration.backup_cases_range(start, end)
         migration.backup_alerts_range(start, end)
-    else:
-        print("Either --year and --month need to be given or none of both.")
-        sys.exit(1)
+
     print(f'Backup done in {time.time() - start_time:.2f} seconds')
 
 
